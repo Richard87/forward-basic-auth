@@ -38,7 +38,7 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/", app.unprotectedHandler)
-	mux.HandleFunc("/authorize", app.basicAuth(app.protectedHandler))
+	mux.HandleFunc("/authorize", app.authenticateRequest(app.protectedHandler))
 
 	srv := &http.Server{
 		Addr:         ":4000",
@@ -53,7 +53,7 @@ func main() {
 	log.Fatal(err)
 }
 
-func (app *application) protectedHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) protectedHandler(w http.ResponseWriter, _ *http.Request) {
 	_, _ = fmt.Fprintln(w, "OK")
 }
 
@@ -66,12 +66,12 @@ func (app *application) generateCookie(w http.ResponseWriter) {
 	http.SetCookie(w, &cookie)
 }
 
-func (app *application) unprotectedHandler(w http.ResponseWriter, r *http.Request) {
+func (app *application) unprotectedHandler(w http.ResponseWriter, _ *http.Request) {
 	http.Error(w, "KO", http.StatusNotFound)
 }
 
-func (app *application) basicAuth(next http.HandlerFunc) http.HandlerFunc {
-	return http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+func (app *application) authenticateRequest(next http.HandlerFunc) http.HandlerFunc {
+	return func(w http.ResponseWriter, r *http.Request) {
 		cookie, _ := r.Cookie("forwardauth_id")
 		if cookie != nil {
 			if expiration, ok := app.hashes[cookie.Value]; ok {
@@ -99,7 +99,7 @@ func (app *application) basicAuth(next http.HandlerFunc) http.HandlerFunc {
 
 		w.Header().Set("WWW-Authenticate", fmt.Sprintf(`Basic realm="%s", charset="UTF-8"`, app.auth.realm))
 		http.Error(w, "KO", http.StatusUnauthorized)
-	})
+	}
 }
 
 func (app *application) matchPassword(plainTextPassword string) bool {
