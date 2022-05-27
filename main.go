@@ -67,7 +67,7 @@ func (app *application) generateCookie(w http.ResponseWriter) {
 }
 
 func (app *application) unprotectedHandler(w http.ResponseWriter, r *http.Request) {
-	_, _ = fmt.Fprintln(w, "OK")
+	http.Error(w, "KO", http.StatusNotFound)
 }
 
 func (app *application) basicAuth(next http.HandlerFunc) http.HandlerFunc {
