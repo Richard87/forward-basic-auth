@@ -48,7 +48,7 @@ func main() {
 		WriteTimeout: 30 * time.Second,
 	}
 
-	log.Printf("starting server on http://127.0.0.1:4000")
+	log.Printf("starting server on http://127.0.0.1:4000/authorize")
 	err := srv.ListenAndServe()
 	log.Fatal(err)
 }
@@ -95,7 +95,7 @@ func (app *application) basicAuth(next http.HandlerFunc) http.HandlerFunc {
 		}
 
 		w.Header().Set("WWW-Authenticate", fmt.Sprintf(`Basic realm="%s", charset="UTF-8"`, app.auth.realm))
-		http.Error(w, "Unauthorized", http.StatusUnauthorized)
+		http.Error(w, "KO", http.StatusUnauthorized)
 	})
 }
 
