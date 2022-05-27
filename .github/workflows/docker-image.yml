@@ -11,8 +11,25 @@ jobs:
   build:
 
     runs-on: ubuntu-latest
-
     steps:
-    - uses: actions/checkout@v3
-    - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag ghcr.io/Richard87/forward-basic-auth:$(date +%s)
+
+    - name: Login to Github Packages
+      uses: docker/login-action@v1
+      with:
+        registry: ghcr.io
+        username: ${{ github.actor }}
+        password: ${{ secrets.GHCR_PAT }}
+
+    - name: Checkout code
+      uses: actions/checkout@v3
+
+    - name: Build image and push to Docker Hub and GitHub Container Registry
+      uses: docker/build-push-action@v2
+      with:
+        # Note: tags has to be all lower-case
+        tags: |
+          ghcr.io/richard87/forward-basic-auth:latest
+          ghcr.io/richard87/forward-basic-auth:${{ github.sha }}
+
+    - name: Image digest
+      run: echo ${{ steps.docker_build.outputs.digest }}
