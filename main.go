@@ -88,9 +88,12 @@ func (app *application) basicAuth(next http.HandlerFunc) http.HandlerFunc {
 			passwordMatch := app.matchPassword(password)
 
 			if usernameMatch && passwordMatch {
+				log.Printf("Authenticated: %s", username)
 				app.generateCookie(w)
 				next.ServeHTTP(w, r)
 				return
+			} else if username != "" {
+				log.Printf("Access denied: %s", username)
 			}
 		}
 
