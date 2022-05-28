@@ -33,7 +33,7 @@ RUN GOOS=linux GOARCH=amd64 go build -ldflags="-w -s" -o /go/bin/server
 ############################
 # STEP 2 build a small image
 ############################
-FROM --platform=linux/amd64 scratch
+FROM --platform=linux/amd64 alpine
 # Import the user and group files from the builder.
 COPY --from=builder /etc/passwd /etc/passwd
 COPY --from=builder /etc/group /etc/group
