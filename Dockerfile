@@ -2,7 +2,7 @@
 # Shamelessly stolen from
 # https://chemidy.medium.com/create-the-smallest-and-secured-golang-docker-image-based-on-scratch-4752223b7324
 ############################
-FROM golang:alpine AS builder
+FROM --platform=linux/amd64 golang:alpine AS builder
 
 # Git is required for fetching the dependencies.
 RUN apk update && apk add --no-cache git
