@@ -31,5 +31,5 @@ jobs:
           ghcr.io/richard87/forward-basic-auth:latest
           ghcr.io/richard87/forward-basic-auth:${{ github.sha }}
 
-    - name: Image digest
-      run: echo ${{ steps.docker_build.outputs.digest }}
+    - name: Image name
+      run: echo ghcr.io/richard87/forward-basic-auth:${{ github.sha }}
