@@ -31,5 +31,10 @@ jobs:
           ghcr.io/richard87/forward-basic-auth:latest
           ghcr.io/richard87/forward-basic-auth:${{ github.sha }}
 
+    - name: Push tagged image
+      run: docker push ghcr.io/richard87/forward-basic-auth:${{ github.sha }}
+    - name: Push latest image
+      run: docker push ghcr.io/richard87/forward-basic-auth:latest
+
     - name: Image name
       run: echo ghcr.io/richard87/forward-basic-auth:${{ github.sha }}
