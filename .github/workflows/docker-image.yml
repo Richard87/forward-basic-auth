@@ -26,15 +26,11 @@ jobs:
     - name: Build image and push to Docker Hub and GitHub Container Registry
       uses: docker/build-push-action@v2
       with:
-        # Note: tags has to be all lower-case
+        push: true
         tags: |
           ghcr.io/richard87/forward-basic-auth:latest
           ghcr.io/richard87/forward-basic-auth:${{ github.sha }}
 
-    - name: Push tagged image
-      run: docker push ghcr.io/richard87/forward-basic-auth:${{ github.sha }}
-    - name: Push latest image
-      run: docker push ghcr.io/richard87/forward-basic-auth:latest
 
     - name: Image name
       run: echo ghcr.io/richard87/forward-basic-auth:${{ github.sha }}
