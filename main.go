@@ -16,6 +16,7 @@ type application struct {
 		username string
 		password string
 		realm    string
+		cookie   string
 	}
 	hashes map[string]time.Time
 }
@@ -26,6 +27,7 @@ func main() {
 	app.auth.username = os.Getenv("AUTH_USERNAME")
 	app.auth.password = os.Getenv("AUTH_PASSWORD")
 	app.auth.realm = getenv("AUTH_REALM", "ForwardBasic")
+	app.auth.cookie = getenv("AUTH_COOKIE", "forward_auth_id")
 	app.hashes = make(map[string]time.Time)
 
 	if app.auth.username == "" {
@@ -37,8 +39,8 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	mux.HandleFunc("/", app.unprotectedHandler)
-	mux.HandleFunc("/authorize", app.authenticateRequest(app.protectedHandler))
+	//mux.HandleFunc("/", app.unprotectedHandler)
+	mux.HandleFunc("/authorize", app.authenticateRequest)
 
 	srv := &http.Server{
 		Addr:         ":4000",
@@ -53,16 +55,12 @@ func main() {
 	log.Fatal(err)
 }
 
-func (app *application) protectedHandler(w http.ResponseWriter, _ *http.Request) {
-	_, _ = fmt.Fprintln(w, "OK")
-}
-
 func (app *application) generateCookie(w http.ResponseWriter) {
 	expiration := time.Now().Add(24 * time.Hour)
 	cookieId := uuid.New().String()
 
 	app.hashes[cookieId] = expiration
-	cookie := http.Cookie{Name: "forwardauth_id", Value: cookieId, Expires: expiration}
+	cookie := http.Cookie{Name: app.auth.cookie, Value: cookieId, Expires: expiration}
 	http.SetCookie(w, &cookie)
 }
 
@@ -70,36 +68,38 @@ func (app *application) unprotectedHandler(w http.ResponseWriter, _ *http.Reques
 	http.Error(w, "KO", http.StatusNotFound)
 }
 
-func (app *application) authenticateRequest(next http.HandlerFunc) http.HandlerFunc {
-	return func(w http.ResponseWriter, r *http.Request) {
-		cookie, _ := r.Cookie("forwardauth_id")
-		if cookie != nil {
-			if expiration, ok := app.hashes[cookie.Value]; ok {
-				if time.Now().Before(expiration) {
-					next.ServeHTTP(w, r)
-					return
-				}
-			}
-		}
-
-		username, password, ok := r.BasicAuth()
-		if ok {
-			usernameMatch := strings.Compare(username, app.auth.username) == 0
-			passwordMatch := app.matchPassword(password)
-
-			if usernameMatch && passwordMatch {
-				log.Printf("Authenticated: %s", username)
-				app.generateCookie(w)
-				next.ServeHTTP(w, r)
+func (app *application) authenticateRequest(w http.ResponseWriter, r *http.Request) {
+	cookie, _ := r.Cookie(app.auth.cookie)
+	if cookie != nil {
+		if expiration, ok := app.hashes[cookie.Value]; ok {
+			if time.Now().Before(expiration) {
+				_, _ = fmt.Fprintln(w, "OK")
 				return
-			} else if username != "" {
-				log.Printf("Access denied: %s", username)
 			}
 		}
-
-		w.Header().Set("WWW-Authenticate", fmt.Sprintf(`Basic realm="%s", charset="UTF-8"`, app.auth.realm))
-		http.Error(w, "KO", http.StatusUnauthorized)
 	}
+
+	username, password, ok := r.BasicAuth()
+	if ok {
+		usernameMatch := strings.Compare(username, app.auth.username) == 0
+		passwordMatch := app.matchPassword(password)
+
+		if usernameMatch && passwordMatch {
+			sourceIp := r.Header.Get("X-Forwarded-For")
+			redirect := r.Header.Get("X-Forwarded-Uri")
+
+			log.Printf("Authenticated: %s (IP: %s)", username, sourceIp)
+
+			app.generateCookie(w)
+			http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
+			return
+		} else if username != "" {
+			log.Printf("Access denied: %s", username)
+		}
+	}
+
+	w.Header().Set("WWW-Authenticate", fmt.Sprintf(`Basic realm="%s", charset="UTF-8"`, app.auth.realm))
+	http.Error(w, "KO", http.StatusUnauthorized)
 }
 
 func (app *application) matchPassword(plainTextPassword string) bool {
