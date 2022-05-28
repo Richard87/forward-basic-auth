@@ -85,10 +85,15 @@ func (app *application) authenticateRequest(w http.ResponseWriter, r *http.Reque
 		passwordMatch := app.matchPassword(password)
 
 		if usernameMatch && passwordMatch {
+			host := r.Header.Get("X-Forwarded-Host")
+			port := r.Header.Get("X-Forwarded-Port")
+			scheme := r.Header.Get("X-Forwarded-Proto")
 			sourceIp := r.Header.Get("X-Forwarded-For")
-			redirect := r.Header.Get("X-Forwarded-Uri")
+			path := r.Header.Get("X-Forwarded-Uri")
 
-			log.Printf("Authenticated: %s (IP: %s)", username, sourceIp)
+			redirect := fmt.Sprintf("%s://%s:%s%s", scheme, host, port, path)
+
+			log.Printf("Authenticated: %s (IP: %s, redirect: %s)", username, sourceIp, redirect)
 
 			app.generateCookie(w)
 			http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
