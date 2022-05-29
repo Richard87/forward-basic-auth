@@ -11,9 +11,14 @@ It runs the server on port 4000 and uses 3 env variables:
 
 ## To run the Auth Server:
 
-`docker run --rm -it -p 4000:4000 -e AUTH_USERNAME=alice -e AUTH_PASSWORD=\$2y\$10\$VhbeCHM9IsG/9n9JU/cN/ufketp3fOhcPCfBxjHKrTYdc4iZRKQ0i ghcr.io/richard87/forward-basic-auth:latest`
+```shell
+docker run --rm -it -p 4000:4000 \
+  -e AUTH_USERNAME=alice \
+  -e AUTH_PASSWORD=\$2y\$10\$VhbeCHM9IsG/9n9JU/cN/ufketp3fOhcPCfBxjHKrTYdc4iZRKQ0i \
+  ghcr.io/richard87/forward-basic-auth:latest
+```
 
-Then go to http://127.0.0.1:4000/authorize and log in with the username **alice** and the password **password**
+Then go to http://127.0.0.1:4000/authorize and log in with the username `alice` and the password `password`
 
 
 ## Traefik
