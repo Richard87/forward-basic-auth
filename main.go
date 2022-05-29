@@ -1,10 +1,13 @@
 package main
 
 import (
+	"crypto/rand"
+	"encoding/hex"
 	"fmt"
-	"github.com/google/uuid"
+	"github.com/gorilla/securecookie"
 	"golang.org/x/crypto/bcrypt"
 	"log"
+	rand2 "math/rand"
 	"net/http"
 	"os"
 	"strings"
@@ -18,7 +21,7 @@ type application struct {
 		realm    string
 		cookie   string
 	}
-	hashes map[string]time.Time
+	sc *securecookie.SecureCookie
 }
 
 func main() {
@@ -28,7 +31,19 @@ func main() {
 	app.auth.password = os.Getenv("AUTH_PASSWORD")
 	app.auth.realm = getenv("AUTH_REALM", "ForwardBasic")
 	app.auth.cookie = getenv("AUTH_COOKIE", "forward_auth_id")
-	app.hashes = make(map[string]time.Time)
+
+	hashKeyString := getenv("AUTH_HASH_KEY", hex.EncodeToString(randomBytes(32)))
+
+	hashKey, err := hex.DecodeString(hashKeyString)
+	if err != nil {
+		log.Fatalf("Unable to decode AUTH_HASH_KEY: %s", err)
+	}
+
+	if len(hashKey) != 32 {
+		log.Fatal("Unable to decode AUTH_HASH_KEY! Invalid HEX string")
+	}
+
+	app.sc = securecookie.New(hashKey, nil)
 
 	if app.auth.username == "" {
 		log.Fatal("basic auth username must be provided")
@@ -39,7 +54,6 @@ func main() {
 	}
 
 	mux := http.NewServeMux()
-	//mux.HandleFunc("/", app.unprotectedHandler)
 	mux.HandleFunc("/authorize", app.authenticateRequest)
 
 	srv := &http.Server{
@@ -51,27 +65,35 @@ func main() {
 	}
 
 	log.Printf("starting server on http://127.0.0.1:4000/authorize")
-	err := srv.ListenAndServe()
+	err = srv.ListenAndServe()
 	log.Fatal(err)
 }
 
 func (app *application) generateCookie(w http.ResponseWriter) {
 	expiration := time.Now().Add(24 * time.Hour)
-	cookieId := uuid.New().String()
+	value := map[string]string{
+		"expiration": expiration.Format(time.RFC3339),
+	}
 
-	app.hashes[cookieId] = expiration
-	cookie := http.Cookie{Name: app.auth.cookie, Value: cookieId, Expires: expiration}
-	http.SetCookie(w, &cookie)
-}
+	if encoded, err := app.sc.Encode(app.auth.cookie, value); err == nil {
+		cookie := &http.Cookie{
+			Name:    app.auth.cookie,
+			Value:   encoded,
+			Path:    "/",
+			Expires: expiration,
+		}
 
-func (app *application) unprotectedHandler(w http.ResponseWriter, _ *http.Request) {
-	http.Error(w, "KO", http.StatusNotFound)
+		http.SetCookie(w, cookie)
+	}
 }
 
 func (app *application) authenticateRequest(w http.ResponseWriter, r *http.Request) {
-	cookie, _ := r.Cookie(app.auth.cookie)
-	if cookie != nil {
-		if expiration, ok := app.hashes[cookie.Value]; ok {
+	if cookie, err := r.Cookie(app.auth.cookie); err == nil {
+		value := make(map[string]string)
+		if err = app.sc.Decode(app.auth.cookie, cookie.Value, &value); err == nil {
+			eStr := value["expiration"]
+			expiration, _ := time.Parse(time.RFC3339, eStr)
+
 			if time.Now().Before(expiration) {
 				_, _ = fmt.Fprintln(w, "OK")
 				return
@@ -124,4 +146,17 @@ func getenv(key, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func randomBytes(length int) []byte {
+	b := make([]byte, length)
+	_, err := rand.Read(b)
+	if err != nil {
+		log.Printf("Unable to generate secure string: %s", err)
+
+		rand2.Read(b)
+		return b
+	}
+
+	return b
 }
