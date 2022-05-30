@@ -99,7 +99,7 @@ func (app *application) generateCookie(w http.ResponseWriter) {
 
 func (app *application) Debug(format string, v ...interface{}) {
 	if app.debug {
-		log.Printf(format, v)
+		log.Printf(format, v...)
 	}
 }
 
