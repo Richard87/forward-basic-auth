@@ -23,6 +23,7 @@ type application struct {
 	}
 	sc          *securecookie.SecureCookie
 	allowOption bool
+	debug       bool
 }
 
 func main() {
@@ -32,7 +33,8 @@ func main() {
 	app.auth.password = os.Getenv("AUTH_PASSWORD")
 	app.auth.realm = getenv("AUTH_REALM", "ForwardBasic")
 	app.auth.cookie = getenv("AUTH_COOKIE", "forward_auth_id")
-	app.allowOption = os.Getenv("ALLOW_OPTION_REQ") == "true"
+	app.allowOption = os.Getenv("ALLOW_OPTION_REQ") == "yes"
+	app.debug = os.Getenv("DEBUG") == "yes"
 
 	hashKeyString := getenv("AUTH_HASH_KEY", hex.EncodeToString(randomBytes(32)))
 
@@ -57,6 +59,12 @@ func main() {
 
 	mux := http.NewServeMux()
 	mux.HandleFunc("/authorize", app.authenticateRequest)
+
+	log.Printf("Realm: %s", app.auth.realm)
+	log.Printf("Cookie: %s", app.auth.cookie)
+	log.Printf("Username: %s", app.auth.username)
+	log.Printf("Allow Options: %t", app.allowOption)
+	log.Printf("Debug: %t", app.debug)
 
 	srv := &http.Server{
 		Addr:         ":4000",
@@ -89,9 +97,17 @@ func (app *application) generateCookie(w http.ResponseWriter) {
 	}
 }
 
+func (app *application) Debug(format string, v ...interface{}) {
+	if app.debug {
+		log.Printf(format, v)
+	}
+}
+
 func (app *application) authenticateRequest(w http.ResponseWriter, r *http.Request) {
 
 	if app.allowOption && r.Method == http.MethodOptions {
+		app.Debug("Request authorized (OPTIONS allowed by config). %v", r.Header)
+
 		_, _ = fmt.Fprintln(w, "OK")
 		return
 	}
@@ -103,9 +119,14 @@ func (app *application) authenticateRequest(w http.ResponseWriter, r *http.Reque
 			expiration, _ := time.Parse(time.RFC3339, eStr)
 
 			if time.Now().Before(expiration) {
+				app.Debug("Request authorized (cookie validated). %v", r.Header)
 				_, _ = fmt.Fprintln(w, "OK")
 				return
+			} else {
+				app.Debug("Request DENIED (cookie outdated!). %v", r.Header)
 			}
+		} else {
+			app.Debug("Request DENIED (cookie invalid!). %v", r.Header)
 		}
 	}
 
@@ -123,16 +144,17 @@ func (app *application) authenticateRequest(w http.ResponseWriter, r *http.Reque
 
 			redirect := fmt.Sprintf("%s://%s:%s%s", scheme, host, port, path)
 
-			log.Printf("Authenticated: %s (IP: %s, redirect: %s)", username, sourceIp, redirect)
+			log.Printf("Authenticated: %s (IP: %s, redirect: %s). %v", username, sourceIp, redirect, r.Header)
 
 			app.generateCookie(w)
 			http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
 			return
 		} else if username != "" {
-			log.Printf("Access denied: %s", username)
+			log.Printf("Access denied: %s. %v", username, r.Header)
 		}
 	}
 
+	app.Debug("Request DENIED %v", r.Header)
 	w.Header().Set("WWW-Authenticate", fmt.Sprintf(`Basic realm="%s", charset="UTF-8"`, app.auth.realm))
 	http.Error(w, "KO", http.StatusUnauthorized)
 }
