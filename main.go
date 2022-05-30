@@ -104,8 +104,14 @@ func (app *application) Debug(format string, v ...interface{}) {
 }
 
 func (app *application) authenticateRequest(w http.ResponseWriter, r *http.Request) {
+	host := r.Header.Get("X-Forwarded-Host")
+	port := r.Header.Get("X-Forwarded-Port")
+	scheme := r.Header.Get("X-Forwarded-Proto")
+	sourceIp := r.Header.Get("X-Forwarded-For")
+	path := r.Header.Get("X-Forwarded-Uri")
+	method := r.Header.Get("X-Forwarded-Method")
 
-	if app.allowOption && r.Method == http.MethodOptions {
+	if app.allowOption && method == http.MethodOptions {
 		app.Debug("Request authorized (OPTIONS allowed by config). %v", r.Header)
 
 		_, _ = fmt.Fprintln(w, "OK")
@@ -136,12 +142,6 @@ func (app *application) authenticateRequest(w http.ResponseWriter, r *http.Reque
 		passwordMatch := app.matchPassword(password)
 
 		if usernameMatch && passwordMatch {
-			host := r.Header.Get("X-Forwarded-Host")
-			port := r.Header.Get("X-Forwarded-Port")
-			scheme := r.Header.Get("X-Forwarded-Proto")
-			sourceIp := r.Header.Get("X-Forwarded-For")
-			path := r.Header.Get("X-Forwarded-Uri")
-
 			redirect := fmt.Sprintf("%s://%s:%s%s", scheme, host, port, path)
 
 			log.Printf("Authenticated: %s (IP: %s, redirect: %s). %v", username, sourceIp, redirect, r.Header)
