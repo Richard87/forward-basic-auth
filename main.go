@@ -21,7 +21,8 @@ type application struct {
 		realm    string
 		cookie   string
 	}
-	sc *securecookie.SecureCookie
+	sc          *securecookie.SecureCookie
+	allowOption bool
 }
 
 func main() {
@@ -31,6 +32,7 @@ func main() {
 	app.auth.password = os.Getenv("AUTH_PASSWORD")
 	app.auth.realm = getenv("AUTH_REALM", "ForwardBasic")
 	app.auth.cookie = getenv("AUTH_COOKIE", "forward_auth_id")
+	app.allowOption = os.Getenv("ALLOW_OPTION_REQ") == "true"
 
 	hashKeyString := getenv("AUTH_HASH_KEY", hex.EncodeToString(randomBytes(32)))
 
@@ -88,6 +90,12 @@ func (app *application) generateCookie(w http.ResponseWriter) {
 }
 
 func (app *application) authenticateRequest(w http.ResponseWriter, r *http.Request) {
+
+	if app.allowOption && r.Method == http.MethodOptions {
+		_, _ = fmt.Fprintln(w, "OK")
+		return
+	}
+
 	if cookie, err := r.Cookie(app.auth.cookie); err == nil {
 		value := make(map[string]string)
 		if err = app.sc.Decode(app.auth.cookie, cookie.Value, &value); err == nil {

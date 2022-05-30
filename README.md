@@ -8,6 +8,7 @@ It runs the server on port 4000 and uses 3 env variables:
 - `AUTH_REALM=ForwardBasic` Optional real for use in BasicAuth
 - `AUTH_COOKIE` Rename the cookie name, defaults to `forward_auth_id`
 - `AUTH_HASH_KEY` Optional hash key, 32 byte hex encoded random string for use to Sign cookies. If not set, a random key will be generated on startup.
+- `ALLOW_OPTION_REQ`: If set to `"true"`, allow all option requests (used for pre-flight request in relation to CORS)
 
 ## To run the Auth Server:
 
