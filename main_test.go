@@ -134,7 +134,9 @@ func createTestApplication() application {
 			realm:    "TEST",
 			cookie:   "test-cookie",
 		},
-		sc: securecookie.New(decodeString, nil),
+		sc:          securecookie.New(decodeString, nil),
+		debug:       true,
+		allowOption: true,
 	}
 }
 

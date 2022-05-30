@@ -110,9 +110,10 @@ func (app *application) authenticateRequest(w http.ResponseWriter, r *http.Reque
 	sourceIp := r.Header.Get("X-Forwarded-For")
 	path := r.Header.Get("X-Forwarded-Uri")
 	method := r.Header.Get("X-Forwarded-Method")
+	redirect := fmt.Sprintf("%s://%s:%s%s", scheme, host, port, path)
 
 	if app.allowOption && method == http.MethodOptions {
-		app.Debug("Request authorized (OPTIONS allowed by config). %v", r.Header)
+		app.Debug("ACCEPTED: %s %s: OPTIONS allowed by config. %v", method, redirect, r.Header)
 
 		_, _ = fmt.Fprintln(w, "OK")
 		return
@@ -125,14 +126,14 @@ func (app *application) authenticateRequest(w http.ResponseWriter, r *http.Reque
 			expiration, _ := time.Parse(time.RFC3339, eStr)
 
 			if time.Now().Before(expiration) {
-				app.Debug("Request authorized (cookie validated). %v", r.Header)
+				app.Debug("ACCEPTED: %s %s: cookie validated. %v", method, redirect, r.Header)
 				_, _ = fmt.Fprintln(w, "OK")
 				return
 			} else {
-				app.Debug("Request DENIED (cookie outdated!). %v", r.Header)
+				app.Debug("DENIED: %s %s: cookie outdated!. %v", method, redirect, r.Header)
 			}
 		} else {
-			app.Debug("Request DENIED (cookie invalid!). %v", r.Header)
+			app.Debug("DENIED: %s %s: DENIED cookie invalid!. %v", method, redirect, r.Header)
 		}
 	}
 
@@ -142,19 +143,17 @@ func (app *application) authenticateRequest(w http.ResponseWriter, r *http.Reque
 		passwordMatch := app.matchPassword(password)
 
 		if usernameMatch && passwordMatch {
-			redirect := fmt.Sprintf("%s://%s:%s%s", scheme, host, port, path)
-
-			log.Printf("Authenticated: %s (IP: %s, redirect: %s). %v", username, sourceIp, redirect, r.Header)
+			log.Printf("ACCEPTED: %s %s: Password accepted for user '%s', ip: '%s'.", method, redirect, username, sourceIp)
 
 			app.generateCookie(w)
 			http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
 			return
 		} else if username != "" {
-			log.Printf("Access denied: %s. %v", username, r.Header)
+			log.Printf("DENIED: %s %s: Invalid username: %s. %v", method, redirect, username, r.Header)
 		}
 	}
 
-	app.Debug("Request DENIED %v", r.Header)
+	app.Debug("DENIED: %s %s: %v", method, redirect, r.Header)
 	w.Header().Set("WWW-Authenticate", fmt.Sprintf(`Basic realm="%s", charset="UTF-8"`, app.auth.realm))
 	http.Error(w, "KO", http.StatusUnauthorized)
 }
