@@ -193,19 +193,15 @@ func (app *application) handleCors(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("access-control-allow-methods", app.corsMethods)
 	}
 
-	if origin == "" {
-		return
-	}
-
-	if app.corsRegex == nil {
-		return
-	}
-
-	if app.corsRegex.MatchString(origin) {
-		app.Debug("CORS ACCEPTED: %s (%s)", origin, os.Getenv("ALLOW_CORS_ORIGIN"))
-		w.Header().Set("Access-Control-Allow-Origin", origin)
+	if origin != "" && app.corsRegex != nil {
+		if app.corsRegex.MatchString(origin) {
+			app.Debug("CORS ACCEPTED: %s (%s)", origin, os.Getenv("ALLOW_CORS_ORIGIN"))
+			w.Header().Set("Access-Control-Allow-Origin", origin)
+		} else {
+			app.Debug("CORS DENIED: %s (%s)", origin, os.Getenv("ALLOW_CORS_ORIGIN"))
+		}
 	} else {
-		app.Debug("CORS IGNORED: %s (%s)", origin, os.Getenv("ALLOW_CORS_ORIGIN"))
+		app.Debug("CORS ORIGIN IGNORED")
 	}
 }
 
