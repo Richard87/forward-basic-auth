@@ -2,13 +2,14 @@
 
 A simple BasicAuth Forward auth server, takes a username and a bcrypt password hash
 
-It runs the server on port 4000 and uses 3 env variables:
+It runs the server on port 4000 and uses these env variables:
 - `AUTH_USERNAME=alice`
 - `AUTH_PASSWORD=$2y$10$VhbeCHM9IsG/9n9JU/cN/ufketp3fOhcPCfBxjHKrTYdc4iZRKQ0i` bcrypt hash of "password" or a different better password. Use `htpasswd -nbBC 10 "" password` to generate a new password, replace **password** with your actuall password, and 10 with your "cost".
 - `AUTH_REALM=ForwardBasic` Optional real for use in BasicAuth
 - `AUTH_COOKIE` Rename the cookie name, defaults to `forward_auth_id`
 - `AUTH_HASH_KEY` Optional hash key, 32 byte hex encoded random string for use to Sign cookies. If not set, a random key will be generated on startup.
 - `ALLOW_OPTION_REQ`: If set to `yes`, allow all option requests (used for pre-flight request in relation to CORS)
+- `ALLOW_CORS_ORIGIN`: Set allowed CORS origins (uses REGEX match, for example: `https://.+.example.com$` or `example.com|localhost$` or `.*`)
 - `DEBUG`: If set to `yes`, include all requests in log (including all headers!)
 
 ## To run the Auth Server:

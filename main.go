@@ -10,6 +10,7 @@ import (
 	rand2 "math/rand"
 	"net/http"
 	"os"
+	"regexp"
 	"strings"
 	"time"
 )
@@ -24,6 +25,7 @@ type application struct {
 	sc          *securecookie.SecureCookie
 	allowOption bool
 	debug       bool
+	corsRegex   *regexp.Regexp
 }
 
 func main() {
@@ -35,6 +37,14 @@ func main() {
 	app.auth.cookie = getenv("AUTH_COOKIE", "forward_auth_id")
 	app.allowOption = os.Getenv("ALLOW_OPTION_REQ") == "yes"
 	app.debug = os.Getenv("DEBUG") == "yes"
+
+	if cors := os.Getenv("ALLOW_CORS_ORIGIN"); cors != "" {
+		r, err := regexp.Compile(cors)
+		if err != nil {
+			log.Fatalf("Unable to decode compile regex: %s", err)
+		}
+		app.corsRegex = r
+	}
 
 	hashKeyString := getenv("AUTH_HASH_KEY", hex.EncodeToString(randomBytes(32)))
 
@@ -114,6 +124,7 @@ func (app *application) authenticateRequest(w http.ResponseWriter, r *http.Reque
 	path := r.Header.Get("X-Forwarded-Uri")
 	method := r.Header.Get("X-Forwarded-Method")
 	redirect := fmt.Sprintf("%s://%s:%s%s", scheme, host, port, path)
+	app.handleCors(w, r)
 
 	if app.allowOption && method == http.MethodOptions {
 		app.Debug("ACCEPTED: %s %s: OPTIONS allowed by config. %v", method, redirect, r.Header)
@@ -149,6 +160,7 @@ func (app *application) authenticateRequest(w http.ResponseWriter, r *http.Reque
 			log.Printf("ACCEPTED: %s %s: Password accepted for user '%s', ip: '%s'.", method, redirect, username, sourceIp)
 
 			app.generateCookie(w)
+
 			http.Redirect(w, r, redirect, http.StatusTemporaryRedirect)
 			return
 		} else if username != "" {
@@ -159,6 +171,22 @@ func (app *application) authenticateRequest(w http.ResponseWriter, r *http.Reque
 	app.Debug("DENIED: %s %s: %v", method, redirect, r.Header)
 	w.Header().Set("WWW-Authenticate", fmt.Sprintf(`Basic realm="%s", charset="UTF-8"`, app.auth.realm))
 	http.Error(w, "KO", http.StatusUnauthorized)
+}
+
+func (app *application) handleCors(w http.ResponseWriter, r *http.Request) {
+	origin := r.Header.Get("Origin")
+
+	if origin == "" {
+		return
+	}
+
+	if app.corsRegex == nil {
+		return
+	}
+
+	if app.corsRegex.MatchString(origin) {
+		w.Header().Set("Access-Control-Allow-Origin", origin)
+	}
 }
 
 func (app *application) matchPassword(plainTextPassword string) bool {

@@ -1,6 +1,7 @@
 
 # @no-cookie-jar
 GET http://localhost:4000/authorize
+Origin: https://test.example.com
 
 > {%
     client.test("Request failed successfully", function() {
@@ -17,6 +18,7 @@ GET http://localhost:4000/authorize
 # @no-redirect
 GET http://localhost:4000/authorize
 Authorization: Basic alice password
+Origin: https://test.example.com
 
 > {%
     client.test("Request authenticated successfully", function() {
@@ -27,6 +29,7 @@ Authorization: Basic alice password
 ###
 
 GET http://localhost:4000/authorize
+Origin: https://test.example.com
 
 > {%
     client.test("Request authenticated successfully", function() {
