@@ -87,10 +87,13 @@ func (app *application) generateCookie(w http.ResponseWriter) {
 
 	if encoded, err := app.sc.Encode(app.auth.cookie, value); err == nil {
 		cookie := &http.Cookie{
-			Name:    app.auth.cookie,
-			Value:   encoded,
-			Path:    "/",
-			Expires: expiration,
+			Name:     app.auth.cookie,
+			Value:    encoded,
+			Path:     "/",
+			Expires:  expiration,
+			SameSite: http.SameSiteNoneMode,
+			Secure:   true,
+			HttpOnly: true,
 		}
 
 		http.SetCookie(w, cookie)

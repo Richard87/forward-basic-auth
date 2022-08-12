@@ -2,44 +2,34 @@
 # @no-cookie-jar
 GET http://localhost:4000/authorize
 
+> {%
+    client.test("Request failed successfully", function() {
+        client.assert(response.status === 401, "Response status is correctly set to 401");
+    });
+%}
+
 <> 2022-05-28T192013.404.txt
 <> 2022-05-28T191943.404.txt
 <> 2022-05-28T191803.404.txt
 <> 2022-05-28T191758.404.txt
 
 ###
-# @no-cookie-jar
 # @no-redirect
 GET http://localhost:4000/authorize
 Authorization: Basic alice password
 
-<> 2022-05-28T192147.307.html
-<> 2022-05-28T192110.404.txt
-<> 2022-05-28T192000.404.txt
-<> 2022-05-28T191816.200.txt
-<> 2022-05-28T191808.404.txt
-<> 2022-05-28T003257.200.txt
-<> 2022-05-28T002816.200.txt
-<> 2022-05-28T002656.401.txt
-<> 2022-05-28T002652.401.txt
-<> 2022-05-28T000848.200.txt
-<> 2022-05-28T000819.401.txt
-<> 2022-05-28T000516.401.txt
-<> 2022-05-28T000426.401.txt
-<> 2022-05-28T000207.401.txt
-<> 2022-05-28T000052.401.txt
-<> 2022-05-28T000040.401.txt
-<> 2022-05-27T235954.401.txt
-<> 2022-05-27T235747.401.txt
-<> 2022-05-27T235554.404.txt
-
+> {%
+    client.test("Request authenticated successfully", function() {
+        client.assert(response.status === 200, "Response status is correctly set to 200");
+    });
+%}
 
 ###
 
-# @no-cookie-jar
 GET http://localhost:4000/authorize
-Cookie: forward_auth_id=MTY1Mzg0MzgyM3xEdi1CQkFFQ180SUFBUXdCREFBQUtmLUNBQUVLWlhod2FYSmhkR2x2YmhreU1ESXlMVEExTFRNd1ZERTVPakF6T2pRekt6QXlPakF3fOFQ7RY1mr1rwAZqMqaEEUWINM3rRwI3yo8_N5XJVuRd
 
-<> 2022-05-28T192209.200.txt
-<> 2022-05-28T192034.401.txt
-<> 2022-05-28T003323.200.txt
+> {%
+    client.test("Request authenticated successfully", function() {
+        client.assert(response.status === 200, "Response status is correctly set to 200");
+    });
+%}
