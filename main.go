@@ -181,7 +181,7 @@ func (app *application) authenticateRequest(w http.ResponseWriter, r *http.Reque
 
 func (app *application) handleCors(w http.ResponseWriter, r *http.Request) {
 	origin := r.Header.Get("Origin")
-	w.Header().Set("access-control-max-age", "600")
+	w.Header().Set("access-control-max-age", "86400") // 24 hours
 
 	if app.corsCredentials {
 		w.Header().Set("access-control-allow-credentials", "true")
