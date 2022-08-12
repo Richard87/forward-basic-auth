@@ -22,10 +22,13 @@ type application struct {
 		realm    string
 		cookie   string
 	}
-	sc          *securecookie.SecureCookie
-	allowOption bool
-	debug       bool
-	corsRegex   *regexp.Regexp
+	sc              *securecookie.SecureCookie
+	allowOption     bool
+	debug           bool
+	corsRegex       *regexp.Regexp
+	corsCredentials bool
+	corsHeaders     string
+	corsMethods     string
 }
 
 func main() {
@@ -36,6 +39,9 @@ func main() {
 	app.auth.realm = getenv("AUTH_REALM", "ForwardBasic")
 	app.auth.cookie = getenv("AUTH_COOKIE", "forward_auth_id")
 	app.allowOption = os.Getenv("ALLOW_OPTION_REQ") == "yes"
+	app.corsCredentials = os.Getenv("ALLOW_CORS_CREDENTIALS") == "yes"
+	app.corsHeaders = os.Getenv("ALLOW_CORS_HEADERS")
+	app.corsMethods = os.Getenv("ALLOW_CORS_METHODS")
 	app.debug = os.Getenv("DEBUG") == "yes"
 
 	if cors := os.Getenv("ALLOW_CORS_ORIGIN"); cors != "" {
@@ -175,6 +181,17 @@ func (app *application) authenticateRequest(w http.ResponseWriter, r *http.Reque
 
 func (app *application) handleCors(w http.ResponseWriter, r *http.Request) {
 	origin := r.Header.Get("Origin")
+	w.Header().Set("access-control-max-age", "600")
+
+	if app.corsCredentials {
+		w.Header().Set("access-control-allow-credentials", "true")
+	}
+	if app.corsHeaders != "" {
+		w.Header().Set("access-control-allow-headers", app.corsHeaders)
+	}
+	if app.corsMethods != "" {
+		w.Header().Set("access-control-allow-methods", app.corsMethods)
+	}
 
 	if origin == "" {
 		return

@@ -10,6 +10,9 @@ It runs the server on port 4000 and uses these env variables:
 - `AUTH_HASH_KEY` Optional hash key, 32 byte hex encoded random string for use to Sign cookies. If not set, a random key will be generated on startup.
 - `ALLOW_OPTION_REQ`: If set to `yes`, allow all option requests (used for pre-flight request in relation to CORS)
 - `ALLOW_CORS_ORIGIN`: Set allowed CORS origins (uses REGEX match, for example: `https://.+.example.com$` or `example.com|localhost$` or `.*`)
+- `ALLOW_CORS_CREDENTIALS`: If set to `yes` sends `access-control-allow-credentials: true`
+- `ALLOW_CORS_HEADERS`: If set to `content-type, authorization` sends `access-control-allow-headers: content-type, authorization`
+- `ALLOW_CORS_METHODS`: If set to `GET, OPTIONS, POST, PUT, PATCH, DELETE` sends `access-control-allow-method: GET, OPTIONS, POST, PUT, PATCH, DELETE`
 - `DEBUG`: If set to `yes`, include all requests in log (including all headers!)
 
 ## To run the Auth Server:
