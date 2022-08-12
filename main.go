@@ -185,7 +185,10 @@ func (app *application) handleCors(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if app.corsRegex.MatchString(origin) {
+		app.Debug("CORS ACCEPTED: %s (%s)", origin, os.Getenv("ALLOW_CORS_ORIGIN"))
 		w.Header().Set("Access-Control-Allow-Origin", origin)
+	} else {
+		app.Debug("CORS IGNORED: %s (%s)", origin, os.Getenv("ALLOW_CORS_ORIGIN"))
 	}
 }
 
