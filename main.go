@@ -29,6 +29,7 @@ type application struct {
 	corsCredentials bool
 	corsHeaders     string
 	corsMethods     string
+	cookieDomain    string
 }
 
 func main() {
@@ -43,6 +44,7 @@ func main() {
 	app.corsHeaders = os.Getenv("ALLOW_CORS_HEADERS")
 	app.corsMethods = os.Getenv("ALLOW_CORS_METHODS")
 	app.debug = os.Getenv("DEBUG") == "yes"
+	app.cookieDomain = os.Getenv("COOKIE_DOMAIN")
 
 	if cors := os.Getenv("ALLOW_CORS_ORIGIN"); cors != "" {
 		r, err := regexp.Compile(cors)
@@ -110,6 +112,7 @@ func (app *application) generateCookie(w http.ResponseWriter) {
 			SameSite: http.SameSiteNoneMode,
 			Secure:   true,
 			HttpOnly: true,
+			Domain:   app.cookieDomain,
 		}
 
 		http.SetCookie(w, cookie)
