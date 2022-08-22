@@ -11,6 +11,7 @@ import (
 	"net/http"
 	"os"
 	"regexp"
+	"strconv"
 	"strings"
 	"time"
 )
@@ -22,14 +23,15 @@ type application struct {
 		realm    string
 		cookie   string
 	}
-	sc              *securecookie.SecureCookie
-	allowOption     bool
-	debug           bool
-	corsRegex       *regexp.Regexp
-	corsCredentials bool
-	corsHeaders     string
-	corsMethods     string
-	cookieDomain    string
+	sc               *securecookie.SecureCookie
+	allowOption      bool
+	debug            bool
+	corsRegex        *regexp.Regexp
+	corsCredentials  bool
+	corsHeaders      string
+	corsMethods      string
+	cookieDomain     string
+	cookieExpiration time.Duration
 }
 
 func main() {
@@ -45,6 +47,13 @@ func main() {
 	app.corsMethods = os.Getenv("ALLOW_CORS_METHODS")
 	app.debug = os.Getenv("DEBUG") == "yes"
 	app.cookieDomain = os.Getenv("COOKIE_DOMAIN")
+
+	cookieTTL, _ := strconv.Atoi(os.Getenv("COOKIE_TTL"))
+	if cookieTTL == 0 {
+		app.cookieExpiration = 24 * time.Hour
+	} else {
+		app.cookieExpiration = time.Duration(cookieTTL) * time.Second
+	}
 
 	if cors := os.Getenv("ALLOW_CORS_ORIGIN"); cors != "" {
 		r, err := regexp.Compile(cors)
@@ -98,7 +107,7 @@ func main() {
 }
 
 func (app *application) generateCookie(w http.ResponseWriter) {
-	expiration := time.Now().Add(24 * time.Hour)
+	expiration := time.Now().Add(app.cookieExpiration)
 	value := map[string]string{
 		"expiration": expiration.Format(time.RFC3339),
 	}
