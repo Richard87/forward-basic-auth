@@ -7,6 +7,7 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"testing"
+	"time"
 )
 
 func TestAuthenticationRoutine(t *testing.T) {
@@ -134,9 +135,11 @@ func createTestApplication() application {
 			realm:    "TEST",
 			cookie:   "test-cookie",
 		},
-		sc:          securecookie.New(decodeString, nil),
-		debug:       true,
-		allowOption: true,
+		sc:               securecookie.New(decodeString, nil),
+		debug:            true,
+		allowOption:      true,
+		cookieExpiration: 24 * time.Hour,
+		cookieDomain:     "test.golang",
 	}
 }
 
